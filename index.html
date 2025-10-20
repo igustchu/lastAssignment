@@ -25,7 +25,9 @@ let backBackModel = null;
 let creditModel = null;
 let hoverObject = null;
 
-
+// ==================
+// Scene / Camera / Renderer
+// ==================
 scene = new THREE.Scene();
 scene.background = new THREE.Color(0x87ceeb);
 
@@ -38,6 +40,8 @@ camera.lookAt(initialLookAt);
 renderer = new THREE.WebGLRenderer({ antialias: true });
 renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.outputEncoding = THREE.sRGBEncoding;
+renderer.shadowMap.enabled = true; // เปิด shadow map
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 document.body.appendChild(renderer.domElement);
 
 controls = new THREE.OrbitControls(camera, renderer.domElement);
@@ -45,10 +49,33 @@ controls.enableDamping = true;
 
 const dirLight = new THREE.DirectionalLight(0xffffff, 2);
 dirLight.position.set(100, 200, 100);
+dirLight.castShadow = true; // ให้แสงหล่อเงา
+dirLight.shadow.mapSize.width = 2048;
+dirLight.shadow.mapSize.height = 2048;
+dirLight.shadow.camera.near = 1;
+dirLight.shadow.camera.far = 500;
+dirLight.shadow.camera.left = -200;
+dirLight.shadow.camera.right = 200;
+dirLight.shadow.camera.top = 200;
+dirLight.shadow.camera.bottom = -200;
 scene.add(dirLight);
+
 scene.add(new THREE.AmbientLight(0xffffff, 0.05));
 
+// ==================
+// พื้นรองรับเงา
+// ==================
+const planeGeo = new THREE.PlaneGeometry(1000, 1000);
+const planeMat = new THREE.ShadowMaterial({ opacity: 0.4 });
+const plane = new THREE.Mesh(planeGeo, planeMat);
+plane.rotation.x = -Math.PI/2;
+plane.position.y = -100;
+plane.receiveShadow = true;
+scene.add(plane);
 
+// ==================
+// Cell Shader
+// ==================
 const vert = `
 uniform float uTime;
 varying vec3 vNormal;
@@ -79,7 +106,21 @@ void main() {
   gl_FragColor = vec4(color,1.0);
 }`;
 
+// ==================
+// ฟังก์ชันช่วยให้โมเดลหล่อเงา
+// ==================
+function enableShadow(model){
+  model.traverse((child)=>{
+    if(child.isMesh){
+      child.castShadow = true;
+      child.receiveShadow = true;
+    }
+  });
+}
 
+// ==================
+// Load Models
+// ==================
 function loadKai(){
   const loader = new THREE.GLTFLoader();
   loader.load('model/mapraw.glb', function(gltf){
@@ -87,7 +128,6 @@ function loadKai(){
     model.scale.set(10,10,10);
     model.position.set(0,-100,0);
     model.rotation.y = -Math.PI/2;
-    scene.add(model);
     model.traverse((child)=>{
       if(child.isMesh){
         const tex = child.material.map || new THREE.TextureLoader().load('https://threejs.org/examples/textures/uv_grid_opengl.jpg');
@@ -103,6 +143,8 @@ function loadKai(){
         });
       }
     });
+    enableShadow(model);
+    scene.add(model);
   });
 }
 
@@ -113,6 +155,7 @@ function loadFinalMakMak(){
     model.scale.set(10,10,10);
     model.position.set(0,-100,0);
     model.rotation.y = -Math.PI/2;
+    enableShadow(model);
     scene.add(model);
   });
 }
@@ -124,6 +167,7 @@ function loadCreditModel(){
     model.scale.set(10,10,10);
     model.position.set(0,-100,0);
     model.rotation.y = -Math.PI/2;
+    enableShadow(model);
     scene.add(model);
     creditModel = model;
   });
@@ -136,6 +180,7 @@ function loadSign111(){
     model.scale.set(10,10,10);
     model.position.set(0,-100,0);
     model.rotation.y = -Math.PI/2;
+    enableShadow(model);
     scene.add(model);
   });
 }
@@ -147,6 +192,7 @@ function loadAboutMe(){
     model.scale.set(10,10,10);
     model.position.set(0,-100,0);
     model.rotation.y = -Math.PI/2;
+    enableShadow(model);
     scene.add(model);
     aboutMeModel = model;
   });
@@ -159,6 +205,7 @@ function loadBack(){
     model.scale.set(10,10,10);
     model.position.set(0,-100,0);
     model.rotation.y = -Math.PI/2;
+    enableShadow(model);
     scene.add(model);
     backModel = model;
   });
@@ -166,32 +213,20 @@ function loadBack(){
 
 function loadBackBack(){
   const loader = new THREE.GLTFLoader();
-  loader.load(
-    'model/backback.glb', 
-    function(gltf){
-      backBackModel = gltf.scene;
-      backBackModel.scale.set(10,10,10);
-      backBackModel.position.set(0,0,0); // ลองเปลี่ยนจาก -100 เป็น 0
-      backBackModel.rotation.y = -Math.PI/2;
-
-      // ถ้าโมเดลไม่มี material ใส่ default
-      backBackModel.traverse((child)=>{
-        if(child.isMesh && !child.material){
-          child.material = new THREE.MeshStandardMaterial({color: 0xff0000});
-        }
-      });
-
-      scene.add(backBackModel);
-      console.log(" BackBack Loaded");
-    },
-    undefined,
-    function(err){
-      console.error(" Error loading BackBack:", err);
-    }
-  );
+  loader.load('model/backback.glb', function(gltf){
+    const model = gltf.scene;
+    model.scale.set(10,10,10);
+    model.position.set(0,-100,0);
+    model.rotation.y = -Math.PI/2;
+    enableShadow(model);
+    scene.add(model);
+    backBackModel = model;
+  }, undefined, function(err){ console.error("❌ BackBack load error:", err); });
 }
 
-
+// ==================
+// HDRI
+// ==================
 const pmremGenerator = new THREE.PMREMGenerator(renderer);
 pmremGenerator.compileEquirectangularShader();
 
@@ -203,16 +238,17 @@ rgbeLoader.load('hdrieiei/qwantani_sunset_puresky_1k.hdr',
     scene.background = envMap;
     texture.dispose();
     pmremGenerator.dispose();
-    console.log('HDRI Loaded');
   },
   undefined,
   function(err){
-    console.warn(' HDRI Load Error:', err);
+    console.warn('⚠️ HDRI Load Error:', err);
     scene.background = new THREE.Color(0x87ceeb);
   }
 );
 
-
+// ==================
+// Load all models
+// ==================
 loadKai();
 loadFinalMakMak();
 loadAboutMe();
@@ -221,7 +257,9 @@ loadBackBack();
 loadSign111();
 loadCreditModel();
 
-
+// ==================
+// Raycaster & Click
+// ==================
 const raycaster = new THREE.Raycaster();
 const mouse = new THREE.Vector2();
 const targetCamPos = new THREE.Vector3(-0.65, -2.67, 94.77);
@@ -232,64 +270,35 @@ window.addEventListener('click', (event)=>{
   mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
   raycaster.setFromCamera(mouse, camera);
 
-  
-  if(aboutMeModel){
-    const hit = raycaster.intersectObject(aboutMeModel,true);
-    if(hit.length>0){
-      gsap.to(camera.position, { x: targetCamPos.x, y: targetCamPos.y, z: targetCamPos.z, duration:2, ease:"power2.inOut" });
-      gsap.to(controls.target, { x: targetLookAt.x, y: targetLookAt.y, z: targetLookAt.z, duration:2, ease:"power2.inOut", onUpdate:()=>controls.update() });
-      return;
-    }
+  if(aboutMeModel && raycaster.intersectObject(aboutMeModel,true).length>0){
+    gsap.to(camera.position, { x: targetCamPos.x, y: targetCamPos.y, z: targetCamPos.z, duration:2, ease:"power2.inOut" });
+    gsap.to(controls.target, { x: targetLookAt.x, y: targetLookAt.y, z: targetLookAt.z, duration:2, ease:"power2.inOut", onUpdate:()=>controls.update() });
+    return;
   }
 
- 
-  if(backModel){
-    const hitBack = raycaster.intersectObject(backModel,true);
-    if(hitBack.length>0){
-      gsap.to(camera.position, { x: initialCamPos.x, y: initialCamPos.y, z: initialCamPos.z, duration:2, ease:"power2.inOut" });
-      gsap.to(controls.target, { x: initialLookAt.x, y: initialLookAt.y, z: initialLookAt.z, duration:2, ease:"power2.inOut", onUpdate:()=>controls.update() });
-      return;
-    }
+  if(backModel && raycaster.intersectObject(backModel,true).length>0){
+    gsap.to(camera.position, { x: initialCamPos.x, y: initialCamPos.y, z: initialCamPos.z, duration:2, ease:"power2.inOut" });
+    gsap.to(controls.target, { x: initialLookAt.x, y: initialLookAt.y, z: initialLookAt.z, duration:2, ease:"power2.inOut", onUpdate:()=>controls.update() });
+    return;
   }
 
- 
-  if(backBackModel){
-    const hitBackBack = raycaster.intersectObject(backBackModel,true);
-    if(hitBackBack.length>0){
-      gsap.to(camera.position, { x: initialCamPos.x, y: initialCamPos.y, z: initialCamPos.z, duration:2, ease:"power2.inOut" });
-      gsap.to(controls.target, { x: initialLookAt.x, y: initialLookAt.y, z: initialLookAt.z, duration:2, ease:"power2.inOut", onUpdate:()=>controls.update() });
-      return;
-    }
+  if(backBackModel && raycaster.intersectObject(backBackModel,true).length>0){
+    gsap.to(camera.position, { x: initialCamPos.x, y: initialCamPos.y, z: initialCamPos.z, duration:2, ease:"power2.inOut" });
+    gsap.to(controls.target, { x: initialLookAt.x, y: initialLookAt.y, z: initialLookAt.z, duration:2, ease:"power2.inOut", onUpdate:()=>controls.update() });
+    return;
   }
 
-  
-  if(creditModel){
-    const hitCredit = raycaster.intersectObject(creditModel,true);
-    if(hitCredit.length>0){
-      gsap.to(camera.position, { 
-        x: 1.7885216397299166, 
-        y: 7.554371667646113, 
-        z: -45.6443778511023, 
-        duration: 2, 
-        ease:"power2.inOut" 
-      });
-      gsap.to(controls.target, { 
-        x: initialLookAt.x, 
-        y: initialLookAt.y, 
-        z: initialLookAt.z, 
-        duration: 2, 
-        ease:"power2.inOut", 
-        onUpdate:()=>controls.update() 
-      });
-      return;
-    }
+  if(creditModel && raycaster.intersectObject(creditModel,true).length>0){
+    gsap.to(camera.position, { x: 1.7885, y: 7.5543, z: -45.6443, duration: 2, ease:"power2.inOut" });
+    gsap.to(controls.target, { x: initialLookAt.x, y: initialLookAt.y, z: initialLookAt.z, duration:2, ease:"power2.inOut", onUpdate:()=>controls.update() });
+    return;
   }
 });
 
-
+// ==================
+// Mouse Hover
+// ==================
 window.addEventListener('mousemove', (event)=>{
-  if(!aboutMeModel && !backModel && !backBackModel && !creditModel) return;
-
   mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
   mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
   raycaster.setFromCamera(mouse, camera);
@@ -305,7 +314,7 @@ window.addEventListener('mousemove', (event)=>{
     if(hoverObject !== object){
       if(hoverObject) hoverObject.material.color.set(hoverObject.currentColor || 0xffffff);
       object.currentColor = object.material.color.getHex();
-      object.material.color.set(0xffff00); // highlight yellow
+      object.material.color.set(0xffff00);
       hoverObject = object;
     }
   } else {
@@ -316,7 +325,9 @@ window.addEventListener('mousemove', (event)=>{
   }
 });
 
-
+// ==================
+// Animate
+// ==================
 function animate(){
   requestAnimationFrame(animate);
   controls.update();
