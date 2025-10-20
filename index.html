@@ -25,9 +25,7 @@ let backBackModel = null;
 let creditModel = null;
 let hoverObject = null;
 
-// ==================
-// Scene / Camera / Renderer
-// ==================
+
 scene = new THREE.Scene();
 scene.background = new THREE.Color(0x87ceeb);
 
@@ -62,9 +60,6 @@ scene.add(dirLight);
 
 scene.add(new THREE.AmbientLight(0xffffff, 0.05));
 
-// ==================
-// พื้นรองรับเงา
-// ==================
 const planeGeo = new THREE.PlaneGeometry(1000, 1000);
 const planeMat = new THREE.ShadowMaterial({ opacity: 0.4 });
 const plane = new THREE.Mesh(planeGeo, planeMat);
@@ -73,9 +68,7 @@ plane.position.y = -100;
 plane.receiveShadow = true;
 scene.add(plane);
 
-// ==================
-// Cell Shader
-// ==================
+
 const vert = `
 uniform float uTime;
 varying vec3 vNormal;
@@ -106,9 +99,6 @@ void main() {
   gl_FragColor = vec4(color,1.0);
 }`;
 
-// ==================
-// ฟังก์ชันช่วยให้โมเดลหล่อเงา
-// ==================
 function enableShadow(model){
   model.traverse((child)=>{
     if(child.isMesh){
@@ -118,9 +108,7 @@ function enableShadow(model){
   });
 }
 
-// ==================
-// Load Models
-// ==================
+
 function loadKai(){
   const loader = new THREE.GLTFLoader();
   loader.load('model/mapraw.glb', function(gltf){
@@ -246,9 +234,7 @@ rgbeLoader.load('hdrieiei/qwantani_sunset_puresky_1k.hdr',
   }
 );
 
-// ==================
-// Load all models
-// ==================
+
 loadKai();
 loadFinalMakMak();
 loadAboutMe();
@@ -257,9 +243,7 @@ loadBackBack();
 loadSign111();
 loadCreditModel();
 
-// ==================
-// Raycaster & Click
-// ==================
+
 const raycaster = new THREE.Raycaster();
 const mouse = new THREE.Vector2();
 const targetCamPos = new THREE.Vector3(-0.65, -2.67, 94.77);
@@ -325,9 +309,7 @@ window.addEventListener('mousemove', (event)=>{
   }
 });
 
-// ==================
-// Animate
-// ==================
+
 function animate(){
   requestAnimationFrame(animate);
   controls.update();
