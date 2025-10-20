@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <title>final project</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    body { margin: 0; overflow: hidden; background: #000; }
+    canvas { display: block; }
+  </style>
+</head>
+<body>
+
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.12.2/dist/gsap.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/RGBELoader.js"></script>
+
+<script>
+let scene, camera, renderer, controls;
+let aboutMeModel = null;
+let backModel = null;
+let backBackModel = null;
+let creditModel = null;
+let hoverObject = null;
+
+// ==================
+// Scene / Camera / Renderer
+// ==================
+scene = new THREE.Scene();
+scene.background = new THREE.Color(0x87ceeb);
+
+camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
+const initialCamPos = new THREE.Vector3(-5.6865, 42.4152, 417.4281);
+const initialLookAt = new THREE.Vector3(0, 10, 0);
+camera.position.copy(initialCamPos);
+camera.lookAt(initialLookAt);
+
+renderer = new THREE.WebGLRenderer({ antialias: true });
+renderer.setSize(window.innerWidth, window.innerHeight);
+renderer.outputEncoding = THREE.sRGBEncoding;
+document.body.appendChild(renderer.domElement);
+
+controls = new THREE.OrbitControls(camera, renderer.domElement);
+controls.enableDamping = true;
+
+const dirLight = new THREE.DirectionalLight(0xffffff, 2);
+dirLight.position.set(100, 200, 100);
+scene.add(dirLight);
+scene.add(new THREE.AmbientLight(0xffffff, 0.05));
+
+// ==================
+// Cell Shader
+// ==================
+const vert = `
+uniform float uTime;
+varying vec3 vNormal;
+varying vec2 vUv;
+varying vec3 vPosW;
+void main() {
+  vNormal = normalize(mat3(modelMatrix) * normal);
+  vUv = uv;
+  vec3 pos = position;
+  pos.y += sin(pos.x * 2.0 + uTime * 3.0) * 10.0;
+  pos.z += cos(pos.x * 1.5 + uTime * 2.0) * 10.0;
+  vPosW = (modelMatrix * vec4(pos,1.0)).xyz;
+  gl_Position = projectionMatrix * modelViewMatrix * vec4(pos,1.0);
+}`;
+const frag = `
+precision mediump float;
+varying vec3 vNormal;
+varying vec2 vUv;
+uniform vec3 uLightDir;
+uniform sampler2D uTex;
+void main() {
+  float diffuse = max(dot(normalize(vNormal), normalize(uLightDir)), 0.0);
+  float levels = 3.0;
+  diffuse = floor(diffuse * levels) / levels;
+  diffuse += 0.5;
+  vec3 base = texture2D(uTex, vUv).rgb;
+  vec3 color = base * diffuse;
+  gl_FragColor = vec4(color,1.0);
+}`;
+
+// ==================
+// Load Models
+// ==================
+function loadKai(){
+  const loader = new THREE.GLTFLoader();
+  loader.load('model/mapraw.glb', function(gltf){
+    const model = gltf.scene;
+    model.scale.set(10,10,10);
+    model.position.set(0,-100,0);
+    model.rotation.y = -Math.PI/2;
+    scene.add(model);
+    model.traverse((child)=>{
+      if(child.isMesh){
+        const tex = child.material.map || new THREE.TextureLoader().load('https://threejs.org/examples/textures/uv_grid_opengl.jpg');
+        child.material = new THREE.ShaderMaterial({
+          vertexShader: vert,
+          fragmentShader: frag,
+          uniforms: {
+            uLightDir: { value: new THREE.Vector3(0.4,1,0.8).normalize() },
+            uTex: { value: tex },
+            uTime: { value: 0 }
+          },
+          side: THREE.DoubleSide
+        });
+      }
+    });
+  });
+}
+
+function loadFinalMakMak(){
+  const loader = new THREE.GLTFLoader();
+  loader.load('model/modelss.glb', function(gltf){
+    const model = gltf.scene;
+    model.scale.set(10,10,10);
+    model.position.set(0,-100,0);
+    model.rotation.y = -Math.PI/2;
+    scene.add(model);
+  });
+}
+
+function loadCreditModel(){
+  const loader = new THREE.GLTFLoader();
+  loader.load('model/creditmodel.glb', function(gltf){
+    const model = gltf.scene;
+    model.scale.set(10,10,10);
+    model.position.set(0,-100,0);
+    model.rotation.y = -Math.PI/2;
+    scene.add(model);
+    creditModel = model;
+  });
+}
+
+function loadSign111(){
+  const loader = new THREE.GLTFLoader();
+  loader.load('model/Sign111.glb', function(gltf){
+    const model = gltf.scene;
+    model.scale.set(10,10,10);
+    model.position.set(0,-100,0);
+    model.rotation.y = -Math.PI/2;
+    scene.add(model);
+  });
+}
+
+function loadAboutMe(){
+  const loader = new THREE.GLTFLoader();
+  loader.load('model/aboutme.glb', function(gltf){
+    const model = gltf.scene;
+    model.scale.set(10,10,10);
+    model.position.set(0,-100,0);
+    model.rotation.y = -Math.PI/2;
+    scene.add(model);
+    aboutMeModel = model;
+  });
+}
+
+function loadBack(){
+  const loader = new THREE.GLTFLoader();
+  loader.load('model/back.glb', function(gltf){
+    const model = gltf.scene;
+    model.scale.set(10,10,10);
+    model.position.set(0,-100,0);
+    model.rotation.y = -Math.PI/2;
+    scene.add(model);
+    backModel = model;
+  });
+}
+
+function loadBackBack(){
+  const loader = new THREE.GLTFLoader();
+  loader.load(
+    'model/backback.glb', 
+    function(gltf){
+      backBackModel = gltf.scene;
+      backBackModel.scale.set(10,10,10);
+      backBackModel.position.set(0,0,0); // ลองเปลี่ยนจาก -100 เป็น 0
+      backBackModel.rotation.y = -Math.PI/2;
+
+      // ถ้าโมเดลไม่มี material ใส่ default
+      backBackModel.traverse((child)=>{
+        if(child.isMesh && !child.material){
+          child.material = new THREE.MeshStandardMaterial({color: 0xff0000});
+        }
+      });
+
+      scene.add(backBackModel);
+      console.log("✅ BackBack Loaded");
+    },
+    undefined,
+    function(err){
+      console.error("❌ Error loading BackBack:", err);
+    }
+  );
+}
+
+
+// ==================
+// HDRI
+// ==================
+const pmremGenerator = new THREE.PMREMGenerator(renderer);
+pmremGenerator.compileEquirectangularShader();
+
+const rgbeLoader = new THREE.RGBELoader();
+rgbeLoader.load('hdrieiei/qwantani_sunset_puresky_1k.hdr',
+  function(texture){
+    const envMap = pmremGenerator.fromEquirectangular(texture).texture;
+    scene.environment = envMap;
+    scene.background = envMap;
+    texture.dispose();
+    pmremGenerator.dispose();
+    console.log('✅ HDRI Loaded');
+  },
+  undefined,
+  function(err){
+    console.warn('⚠️ HDRI Load Error:', err);
+    scene.background = new THREE.Color(0x87ceeb);
+  }
+);
+
+// ==================
+// Load all
+// ==================
+loadKai();
+loadFinalMakMak();
+loadAboutMe();
+loadBack();
+loadBackBack();
+loadSign111();
+loadCreditModel();
+
+// ==================
+// Raycaster
+// ==================
+const raycaster = new THREE.Raycaster();
+const mouse = new THREE.Vector2();
+const targetCamPos = new THREE.Vector3(-0.65, -2.67, 94.77);
+const targetLookAt = new THREE.Vector3(11, 5, 3);
+
+window.addEventListener('click', (event)=>{
+  mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+  mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+  raycaster.setFromCamera(mouse, camera);
+
+  // AboutMe
+  if(aboutMeModel){
+    const hit = raycaster.intersectObject(aboutMeModel,true);
+    if(hit.length>0){
+      gsap.to(camera.position, { x: targetCamPos.x, y: targetCamPos.y, z: targetCamPos.z, duration:2, ease:"power2.inOut" });
+      gsap.to(controls.target, { x: targetLookAt.x, y: targetLookAt.y, z: targetLookAt.z, duration:2, ease:"power2.inOut", onUpdate:()=>controls.update() });
+      return;
+    }
+  }
+
+  // Back
+  if(backModel){
+    const hitBack = raycaster.intersectObject(backModel,true);
+    if(hitBack.length>0){
+      gsap.to(camera.position, { x: initialCamPos.x, y: initialCamPos.y, z: initialCamPos.z, duration:2, ease:"power2.inOut" });
+      gsap.to(controls.target, { x: initialLookAt.x, y: initialLookAt.y, z: initialLookAt.z, duration:2, ease:"power2.inOut", onUpdate:()=>controls.update() });
+      return;
+    }
+  }
+
+  // BackBack
+  if(backBackModel){
+    const hitBackBack = raycaster.intersectObject(backBackModel,true);
+    if(hitBackBack.length>0){
+      gsap.to(camera.position, { x: initialCamPos.x, y: initialCamPos.y, z: initialCamPos.z, duration:2, ease:"power2.inOut" });
+      gsap.to(controls.target, { x: initialLookAt.x, y: initialLookAt.y, z: initialLookAt.z, duration:2, ease:"power2.inOut", onUpdate:()=>controls.update() });
+      return;
+    }
+  }
+
+  // CreditModel
+  if(creditModel){
+    const hitCredit = raycaster.intersectObject(creditModel,true);
+    if(hitCredit.length>0){
+      gsap.to(camera.position, { 
+        x: 1.7885216397299166, 
+        y: 7.554371667646113, 
+        z: -45.6443778511023, 
+        duration: 2, 
+        ease:"power2.inOut" 
+      });
+      gsap.to(controls.target, { 
+        x: initialLookAt.x, 
+        y: initialLookAt.y, 
+        z: initialLookAt.z, 
+        duration: 2, 
+        ease:"power2.inOut", 
+        onUpdate:()=>controls.update() 
+      });
+      return;
+    }
+  }
+});
+
+// ==================
+// Mouse Hover
+// ==================
+window.addEventListener('mousemove', (event)=>{
+  if(!aboutMeModel && !backModel && !backBackModel && !creditModel) return;
+
+  mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+  mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+  raycaster.setFromCamera(mouse, camera);
+
+  let intersects = [];
+  if(aboutMeModel) intersects = intersects.concat(raycaster.intersectObject(aboutMeModel,true));
+  if(backModel) intersects = intersects.concat(raycaster.intersectObject(backModel,true));
+  if(backBackModel) intersects = intersects.concat(raycaster.intersectObject(backBackModel,true));
+  if(creditModel) intersects = intersects.concat(raycaster.intersectObject(creditModel,true));
+
+  if(intersects.length>0){
+    const object = intersects[0].object;
+    if(hoverObject !== object){
+      if(hoverObject) hoverObject.material.color.set(hoverObject.currentColor || 0xffffff);
+      object.currentColor = object.material.color.getHex();
+      object.material.color.set(0xffff00); // highlight yellow
+      hoverObject = object;
+    }
+  } else {
+    if(hoverObject){
+      hoverObject.material.color.set(hoverObject.currentColor || 0xffffff);
+      hoverObject = null;
+    }
+  }
+});
+
+// ==================
+// Animate
+// ==================
+function animate(){
+  requestAnimationFrame(animate);
+  controls.update();
+
+  scene.traverse((obj)=>{
+    if(obj.isMesh && obj.material.uniforms && obj.material.uniforms.uTime){
+      obj.material.uniforms.uTime.value = performance.now()/1000;
+    }
+  });
+
+  renderer.render(scene,camera);
+}
+animate();
+
+window.addEventListener('resize', ()=>{
+  camera.aspect = window.innerWidth / window.innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(window.innerWidth, window.innerHeight);
+});
+</script>
+
+</body>
+</html>
