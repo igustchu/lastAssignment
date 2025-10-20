@@ -25,9 +25,7 @@ let backBackModel = null;
 let creditModel = null;
 let hoverObject = null;
 
-// ==================
-// Scene / Camera / Renderer
-// ==================
+
 scene = new THREE.Scene();
 scene.background = new THREE.Color(0x87ceeb);
 
@@ -50,9 +48,7 @@ dirLight.position.set(100, 200, 100);
 scene.add(dirLight);
 scene.add(new THREE.AmbientLight(0xffffff, 0.05));
 
-// ==================
-// Cell Shader
-// ==================
+
 const vert = `
 uniform float uTime;
 varying vec3 vNormal;
@@ -83,9 +79,7 @@ void main() {
   gl_FragColor = vec4(color,1.0);
 }`;
 
-// ==================
-// Load Models
-// ==================
+
 function loadKai(){
   const loader = new THREE.GLTFLoader();
   loader.load('model/mapraw.glb', function(gltf){
@@ -188,19 +182,16 @@ function loadBackBack(){
       });
 
       scene.add(backBackModel);
-      console.log("✅ BackBack Loaded");
+      console.log(" BackBack Loaded");
     },
     undefined,
     function(err){
-      console.error("❌ Error loading BackBack:", err);
+      console.error(" Error loading BackBack:", err);
     }
   );
 }
 
 
-// ==================
-// HDRI
-// ==================
 const pmremGenerator = new THREE.PMREMGenerator(renderer);
 pmremGenerator.compileEquirectangularShader();
 
@@ -212,18 +203,16 @@ rgbeLoader.load('hdrieiei/qwantani_sunset_puresky_1k.hdr',
     scene.background = envMap;
     texture.dispose();
     pmremGenerator.dispose();
-    console.log('✅ HDRI Loaded');
+    console.log('HDRI Loaded');
   },
   undefined,
   function(err){
-    console.warn('⚠️ HDRI Load Error:', err);
+    console.warn(' HDRI Load Error:', err);
     scene.background = new THREE.Color(0x87ceeb);
   }
 );
 
-// ==================
-// Load all
-// ==================
+
 loadKai();
 loadFinalMakMak();
 loadAboutMe();
@@ -232,9 +221,7 @@ loadBackBack();
 loadSign111();
 loadCreditModel();
 
-// ==================
-// Raycaster
-// ==================
+
 const raycaster = new THREE.Raycaster();
 const mouse = new THREE.Vector2();
 const targetCamPos = new THREE.Vector3(-0.65, -2.67, 94.77);
@@ -245,7 +232,7 @@ window.addEventListener('click', (event)=>{
   mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
   raycaster.setFromCamera(mouse, camera);
 
-  // AboutMe
+  
   if(aboutMeModel){
     const hit = raycaster.intersectObject(aboutMeModel,true);
     if(hit.length>0){
@@ -255,7 +242,7 @@ window.addEventListener('click', (event)=>{
     }
   }
 
-  // Back
+ 
   if(backModel){
     const hitBack = raycaster.intersectObject(backModel,true);
     if(hitBack.length>0){
@@ -265,7 +252,7 @@ window.addEventListener('click', (event)=>{
     }
   }
 
-  // BackBack
+ 
   if(backBackModel){
     const hitBackBack = raycaster.intersectObject(backBackModel,true);
     if(hitBackBack.length>0){
@@ -275,7 +262,7 @@ window.addEventListener('click', (event)=>{
     }
   }
 
-  // CreditModel
+  
   if(creditModel){
     const hitCredit = raycaster.intersectObject(creditModel,true);
     if(hitCredit.length>0){
@@ -299,9 +286,7 @@ window.addEventListener('click', (event)=>{
   }
 });
 
-// ==================
-// Mouse Hover
-// ==================
+
 window.addEventListener('mousemove', (event)=>{
   if(!aboutMeModel && !backModel && !backBackModel && !creditModel) return;
 
@@ -331,9 +316,7 @@ window.addEventListener('mousemove', (event)=>{
   }
 });
 
-// ==================
-// Animate
-// ==================
+
 function animate(){
   requestAnimationFrame(animate);
   controls.update();
