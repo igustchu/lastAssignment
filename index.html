@@ -38,15 +38,38 @@ camera.lookAt(initialLookAt);
 renderer = new THREE.WebGLRenderer({ antialias: true });
 renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.outputEncoding = THREE.sRGBEncoding;
+renderer.shadowMap.enabled = true; //  เปิด shadow
+renderer.shadowMap.type = THREE.PCFSoftShadowMap; //  เงานุ่ม
 document.body.appendChild(renderer.domElement);
 
 controls = new THREE.OrbitControls(camera, renderer.domElement);
 controls.enableDamping = true;
 
+
 const dirLight = new THREE.DirectionalLight(0xffffff, 2);
 dirLight.position.set(100, 200, 100);
+dirLight.castShadow = true; //  ให้ light สร้าง shadow
+dirLight.shadow.mapSize.width = 2048;
+dirLight.shadow.mapSize.height = 2048;
+dirLight.shadow.camera.near = 0.5;
+dirLight.shadow.camera.far = 500;
+dirLight.shadow.camera.left = -200;
+dirLight.shadow.camera.right = 200;
+dirLight.shadow.camera.top = 200;
+dirLight.shadow.camera.bottom = -200;
 scene.add(dirLight);
+
 scene.add(new THREE.AmbientLight(0xffffff, 0.05));
+
+
+const ground = new THREE.Mesh(
+  new THREE.PlaneGeometry(2000, 2000),
+  new THREE.ShadowMaterial({ opacity: 0.5 }) 
+);
+ground.rotation.x = -Math.PI/2;
+ground.position.y = -100; 
+ground.receiveShadow = true;
+scene.add(ground);
 
 
 const vert = `
@@ -80,6 +103,16 @@ void main() {
 }`;
 
 
+function addShadowToModel(model){
+  model.traverse((child)=>{
+    if(child.isMesh){
+      child.castShadow = true;    
+      child.receiveShadow = true; 
+    }
+  });
+}
+
+// ฟังก์ชันโหลดโมเดลทั้งหมด เหมือนเดิม เพิ่ม addShadowToModel
 function loadKai(){
   const loader = new THREE.GLTFLoader();
   loader.load('model/mapraw.glb', function(gltf){
@@ -87,7 +120,7 @@ function loadKai(){
     model.scale.set(10,10,10);
     model.position.set(0,-100,0);
     model.rotation.y = -Math.PI/2;
-    scene.add(model);
+
     model.traverse((child)=>{
       if(child.isMesh){
         const tex = child.material.map || new THREE.TextureLoader().load('https://threejs.org/examples/textures/uv_grid_opengl.jpg');
@@ -103,6 +136,9 @@ function loadKai(){
         });
       }
     });
+
+    addShadowToModel(model); 
+    scene.add(model);
   });
 }
 
@@ -113,6 +149,7 @@ function loadFinalMakMak(){
     model.scale.set(10,10,10);
     model.position.set(0,-100,0);
     model.rotation.y = -Math.PI/2;
+    addShadowToModel(model);
     scene.add(model);
   });
 }
@@ -124,6 +161,7 @@ function loadCreditModel(){
     model.scale.set(10,10,10);
     model.position.set(0,-100,0);
     model.rotation.y = -Math.PI/2;
+    addShadowToModel(model);
     scene.add(model);
     creditModel = model;
   });
@@ -136,6 +174,7 @@ function loadSign111(){
     model.scale.set(10,10,10);
     model.position.set(0,-100,0);
     model.rotation.y = -Math.PI/2;
+    addShadowToModel(model);
     scene.add(model);
   });
 }
@@ -147,6 +186,7 @@ function loadAboutMe(){
     model.scale.set(10,10,10);
     model.position.set(0,-100,0);
     model.rotation.y = -Math.PI/2;
+    addShadowToModel(model);
     scene.add(model);
     aboutMeModel = model;
   });
@@ -159,6 +199,7 @@ function loadBack(){
     model.scale.set(10,10,10);
     model.position.set(0,-100,0);
     model.rotation.y = -Math.PI/2;
+    addShadowToModel(model);
     scene.add(model);
     backModel = model;
   });
@@ -171,16 +212,16 @@ function loadBackBack(){
     function(gltf){
       backBackModel = gltf.scene;
       backBackModel.scale.set(10,10,10);
-      backBackModel.position.set(0,0,0); 
+      backBackModel.position.set(0,0,0);
       backBackModel.rotation.y = -Math.PI/2;
 
-      
       backBackModel.traverse((child)=>{
         if(child.isMesh && !child.material){
           child.material = new THREE.MeshStandardMaterial({color: 0xff0000});
         }
       });
 
+      addShadowToModel(backBackModel);
       scene.add(backBackModel);
       console.log(" BackBack Loaded");
     },
@@ -190,7 +231,6 @@ function loadBackBack(){
     }
   );
 }
-
 
 // ==================
 // HDRI
@@ -206,7 +246,7 @@ rgbeLoader.load('hdrieiei/qwantani_sunset_puresky_1k.hdr',
     scene.background = envMap;
     texture.dispose();
     pmremGenerator.dispose();
-    console.log(' HDRI Loaded');
+    console.log('HDRI Loaded');
   },
   undefined,
   function(err){
@@ -215,9 +255,7 @@ rgbeLoader.load('hdrieiei/qwantani_sunset_puresky_1k.hdr',
   }
 );
 
-// ==================
-// Load all
-// ==================
+
 loadKai();
 loadFinalMakMak();
 loadAboutMe();
@@ -225,6 +263,7 @@ loadBack();
 loadBackBack();
 loadSign111();
 loadCreditModel();
+
 
 
 const raycaster = new THREE.Raycaster();
@@ -237,7 +276,6 @@ window.addEventListener('click', (event)=>{
   mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
   raycaster.setFromCamera(mouse, camera);
 
-  // AboutMe
   if(aboutMeModel){
     const hit = raycaster.intersectObject(aboutMeModel,true);
     if(hit.length>0){
@@ -246,8 +284,6 @@ window.addEventListener('click', (event)=>{
       return;
     }
   }
-
-  // Back
   if(backModel){
     const hitBack = raycaster.intersectObject(backModel,true);
     if(hitBack.length>0){
@@ -256,8 +292,6 @@ window.addEventListener('click', (event)=>{
       return;
     }
   }
-
-  // BackBack
   if(backBackModel){
     const hitBackBack = raycaster.intersectObject(backBackModel,true);
     if(hitBackBack.length>0){
@@ -266,31 +300,15 @@ window.addEventListener('click', (event)=>{
       return;
     }
   }
-
-  // CreditModel
   if(creditModel){
     const hitCredit = raycaster.intersectObject(creditModel,true);
     if(hitCredit.length>0){
-      gsap.to(camera.position, { 
-        x: 1.7885216397299166, 
-        y: 7.554371667646113, 
-        z: -45.6443778511023, 
-        duration: 2, 
-        ease:"power2.inOut" 
-      });
-      gsap.to(controls.target, { 
-        x: initialLookAt.x, 
-        y: initialLookAt.y, 
-        z: initialLookAt.z, 
-        duration: 2, 
-        ease:"power2.inOut", 
-        onUpdate:()=>controls.update() 
-      });
+      gsap.to(camera.position, { x: 1.7885, y: 7.554, z: -45.644, duration: 2, ease:"power2.inOut" });
+      gsap.to(controls.target, { x: initialLookAt.x, y: initialLookAt.y, z: initialLookAt.z, duration: 2, ease:"power2.inOut", onUpdate:()=>controls.update() });
       return;
     }
   }
 });
-
 
 window.addEventListener('mousemove', (event)=>{
   if(!aboutMeModel && !backModel && !backBackModel && !creditModel) return;
@@ -320,6 +338,7 @@ window.addEventListener('mousemove', (event)=>{
     }
   }
 });
+
 
 function animate(){
   requestAnimationFrame(animate);
