@@ -2,7 +2,7 @@
 <html lang="th">
 <head>
   <meta charset="UTF-8">
-  <title>Final Project</title>
+  <title>final project</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <style>
     body { margin: 0; overflow: hidden; background: #000; }
@@ -54,7 +54,6 @@ uniform float uTime;
 varying vec3 vNormal;
 varying vec2 vUv;
 varying vec3 vPosW;
-
 void main() {
   vNormal = normalize(mat3(modelMatrix) * normal);
   vUv = uv;
@@ -64,14 +63,12 @@ void main() {
   vPosW = (modelMatrix * vec4(pos,1.0)).xyz;
   gl_Position = projectionMatrix * modelViewMatrix * vec4(pos,1.0);
 }`;
-
 const frag = `
 precision mediump float;
 varying vec3 vNormal;
 varying vec2 vUv;
 uniform vec3 uLightDir;
 uniform sampler2D uTex;
-
 void main() {
   float diffuse = max(dot(normalize(vNormal), normalize(uLightDir)), 0.0);
   float levels = 3.0;
@@ -83,7 +80,7 @@ void main() {
 }`;
 
 
-function loadKai() {
+function loadKai(){
   const loader = new THREE.GLTFLoader();
   loader.load('model/mapraw.glb', function(gltf){
     const model = gltf.scene;
@@ -91,7 +88,6 @@ function loadKai() {
     model.position.set(0,-100,0);
     model.rotation.y = -Math.PI/2;
     scene.add(model);
-
     model.traverse((child)=>{
       if(child.isMesh){
         const tex = child.material.map || new THREE.TextureLoader().load('https://threejs.org/examples/textures/uv_grid_opengl.jpg');
@@ -110,7 +106,7 @@ function loadKai() {
   });
 }
 
-function loadFinalMakMak() {
+function loadFinalMakMak(){
   const loader = new THREE.GLTFLoader();
   loader.load('model/modelss.glb', function(gltf){
     const model = gltf.scene;
@@ -121,7 +117,7 @@ function loadFinalMakMak() {
   });
 }
 
-function loadCreditModel() {
+function loadCreditModel(){
   const loader = new THREE.GLTFLoader();
   loader.load('model/creditmodel.glb', function(gltf){
     const model = gltf.scene;
@@ -133,7 +129,7 @@ function loadCreditModel() {
   });
 }
 
-function loadSign111() {
+function loadSign111(){
   const loader = new THREE.GLTFLoader();
   loader.load('model/Sign111.glb', function(gltf){
     const model = gltf.scene;
@@ -144,7 +140,7 @@ function loadSign111() {
   });
 }
 
-function loadAboutMe() {
+function loadAboutMe(){
   const loader = new THREE.GLTFLoader();
   loader.load('model/aboutme.glb', function(gltf){
     const model = gltf.scene;
@@ -156,7 +152,7 @@ function loadAboutMe() {
   });
 }
 
-function loadBack() {
+function loadBack(){
   const loader = new THREE.GLTFLoader();
   loader.load('model/back.glb', function(gltf){
     const model = gltf.scene;
@@ -168,15 +164,17 @@ function loadBack() {
   });
 }
 
-function loadBackBack() {
+function loadBackBack(){
   const loader = new THREE.GLTFLoader();
-  loader.load('model/backback.glb',
+  loader.load(
+    'model/backback.glb', 
     function(gltf){
       backBackModel = gltf.scene;
       backBackModel.scale.set(10,10,10);
-      backBackModel.position.set(0,0,0);
+      backBackModel.position.set(0,0,0); 
       backBackModel.rotation.y = -Math.PI/2;
 
+      
       backBackModel.traverse((child)=>{
         if(child.isMesh && !child.material){
           child.material = new THREE.MeshStandardMaterial({color: 0xff0000});
@@ -193,6 +191,7 @@ function loadBackBack() {
   );
 }
 
+
 // ==================
 // HDRI
 // ==================
@@ -207,7 +206,7 @@ rgbeLoader.load('hdrieiei/qwantani_sunset_puresky_1k.hdr',
     scene.background = envMap;
     texture.dispose();
     pmremGenerator.dispose();
-    console.log('HDRI Loaded');
+    console.log(' HDRI Loaded');
   },
   undefined,
   function(err){
@@ -217,7 +216,7 @@ rgbeLoader.load('hdrieiei/qwantani_sunset_puresky_1k.hdr',
 );
 
 // ==================
-// Load all models
+// Load all
 // ==================
 loadKai();
 loadFinalMakMak();
@@ -227,9 +226,7 @@ loadBackBack();
 loadSign111();
 loadCreditModel();
 
-// ==================
-// Raycaster
-// ==================
+
 const raycaster = new THREE.Raycaster();
 const mouse = new THREE.Vector2();
 const targetCamPos = new THREE.Vector3(-0.65, -2.67, 94.77);
@@ -274,16 +271,27 @@ window.addEventListener('click', (event)=>{
   if(creditModel){
     const hitCredit = raycaster.intersectObject(creditModel,true);
     if(hitCredit.length>0){
-      gsap.to(camera.position, { x: 1.7885, y: 7.5543, z: -45.6443, duration: 2, ease:"power2.inOut" });
-      gsap.to(controls.target, { x: initialLookAt.x, y: initialLookAt.y, z: initialLookAt.z, duration:2, ease:"power2.inOut", onUpdate:()=>controls.update() });
+      gsap.to(camera.position, { 
+        x: 1.7885216397299166, 
+        y: 7.554371667646113, 
+        z: -45.6443778511023, 
+        duration: 2, 
+        ease:"power2.inOut" 
+      });
+      gsap.to(controls.target, { 
+        x: initialLookAt.x, 
+        y: initialLookAt.y, 
+        z: initialLookAt.z, 
+        duration: 2, 
+        ease:"power2.inOut", 
+        onUpdate:()=>controls.update() 
+      });
       return;
     }
   }
 });
 
-// ==================
-// Mouse Hover
-// ==================
+
 window.addEventListener('mousemove', (event)=>{
   if(!aboutMeModel && !backModel && !backBackModel && !creditModel) return;
 
@@ -313,9 +321,6 @@ window.addEventListener('mousemove', (event)=>{
   }
 });
 
-// ==================
-// Animate
-// ==================
 function animate(){
   requestAnimationFrame(animate);
   controls.update();
